@@ -131,3 +131,5 @@ dmypy.json
 # Docker volumes
 postgres-*-data/
 rabbitmq-data/
+
+.DS_Store
