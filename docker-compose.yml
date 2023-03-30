@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: "rabbitmq:3.9.13-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - './rabbitmq-data:/data'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  gateway:
+    build: 
+      context: ./services/
+      dockerfile: ./gateway/Dockerfile
+    image: gateway
+    container_name: gateway
+    ports:
+      - '8001:8001'
+    restart: always
+    depends_on:
+      - 'gateway-postgres'
+      - 'rabbitmq'
+    command: bash -c "uvicorn app.asgi:app --host=0.0.0.0 --port=8001"
+  
+  gateway-postgres:
+    image: 'postgres:10.6'
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: 'test'
+      POSTGRES_USER: 'test'
+      POSTGRES_DB: 'gateway'
+      PGDATA: '/tmp'
+    volumes:
+      - ./postgres-gtw-data:/var/lib/postgresql/data
+
+  billing:
+    build: 
+      context: ./services/
+      dockerfile: ./billing/Dockerfile
+    image: billing
+    container_name: billing
+    ports:
+      - '8002:8002'
+    restart: always
+    depends_on:
+      - 'billing-postgres'
+      - 'rabbitmq'
+    command: bash -c "uvicorn app.asgi:app --host=0.0.0.0 --port=8002"
+  
+  billing-postgres:
+    image: 'postgres:10.6'
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: 'test'
+      POSTGRES_USER: 'test'
+      POSTGRES_DB: 'billing'
+      PGDATA: '/tmp'
+    volumes:
+      - ./postgres-bll-data:/var/lib/postgresql/data
+
+  tasks:
+    build: 
+      context: ./services/
+      dockerfile: ./tasks/Dockerfile
+    image: tasks
+    container_name: tasks
+    ports:
+      - '8003:8003'
+    restart: always
+    depends_on:
+      - 'tasks-postgres'
+      - 'rabbitmq'
+    command: bash -c "uvicorn app.asgi:app --host=0.0.0.0 --port=8003"
+  
+  tasks-postgres:
+    image: 'postgres:10.6'
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: 'test'
+      POSTGRES_USER: 'test'
+      POSTGRES_DB: 'tasks'
+      PGDATA: '/tmp'
+    volumes:
+      - ./postgres-tsk-data:/var/lib/postgresql/data

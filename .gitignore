@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Docker volumes
+postgres-*-data/
+rabbitmq-data/
