@@ -8,3 +8,4 @@ beautifulsoup4>=4.10
 sqlalchemy>=1.4
 psycopg2-binary>=2.9
 debugpy>=1.5
+httpx>=0.23

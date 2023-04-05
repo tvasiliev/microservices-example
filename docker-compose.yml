@@ -23,6 +23,11 @@ services:
     ports:
       - '8001:8001'
     restart: always
+    environment:
+      PG_URL: 'postgresql://${GATEWAY_PG_USER}:${GATEWAY_PG_PASS}@gateway-postgres:5432/${GATEWAY_PG_DB}'
+      JWT_SECRET_KEY: '${JWT_SECRET_KEY}'
+      JWT_PUBLIC_KEY: '${JWT_PUBLIC_KEY}'
+      JWT_PRIVATE_KEY: '${JWT_PRIVATE_KEY}'
     depends_on:
       - 'gateway-postgres'
       - 'rabbitmq'
@@ -32,9 +37,9 @@ services:
     image: 'postgres:10.6'
     restart: always
     environment:
-      POSTGRES_PASSWORD: 'test'
-      POSTGRES_USER: 'test'
-      POSTGRES_DB: 'gateway'
+      POSTGRES_PASSWORD: '${GATEWAY_PG_PASS}'
+      POSTGRES_USER: '${GATEWAY_PG_USER}'
+      POSTGRES_DB: '${GATEWAY_PG_DB}'
       PGDATA: '/tmp'
     volumes:
       - ./postgres-gtw-data:/var/lib/postgresql/data
@@ -48,6 +53,8 @@ services:
     ports:
       - '8002:8002'
     restart: always
+    environment:
+      PG_URL: 'postgresql://${BILLING_PG_USER}:${BILLING_PG_PASS}@billing-postgres:5432/${BILLING_PG_DB}'
     depends_on:
       - 'billing-postgres'
       - 'rabbitmq'
@@ -57,9 +64,9 @@ services:
     image: 'postgres:10.6'
     restart: always
     environment:
-      POSTGRES_PASSWORD: 'test'
-      POSTGRES_USER: 'test'
-      POSTGRES_DB: 'billing'
+      POSTGRES_PASSWORD: '${BILLING_PG_PASS}'
+      POSTGRES_USER: '${BILLING_PG_USER}'
+      POSTGRES_DB: '${BILLING_PG_DB}'
       PGDATA: '/tmp'
     volumes:
       - ./postgres-bll-data:/var/lib/postgresql/data
@@ -73,6 +80,8 @@ services:
     ports:
       - '8003:8003'
     restart: always
+    environment:
+      PG_URL: 'postgresql://${TASKS_PG_USER}:${TASKS_PG_PASS}@tasks-postgres:5432/${TASKS_PG_DB}'
     depends_on:
       - 'tasks-postgres'
       - 'rabbitmq'
@@ -82,9 +91,9 @@ services:
     image: 'postgres:10.6'
     restart: always
     environment:
-      POSTGRES_PASSWORD: 'test'
-      POSTGRES_USER: 'test'
-      POSTGRES_DB: 'tasks'
+      POSTGRES_PASSWORD: '${TASKS_PG_PASS}'
+      POSTGRES_USER: '${TASKS_PG_USER}'
+      POSTGRES_DB: '${TASKS_PG_DB}'
       PGDATA: '/tmp'
     volumes:
       - ./postgres-tsk-data:/var/lib/postgresql/data
