@@ -1,10 +1,12 @@
 import asyncio
+import json
 
 from fastapi import Depends, Request, Response
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
 from sqlalchemy.exc import IntegrityError
 from starlette.responses import JSONResponse
+from modules.rpc.client import RPCClient
 
 from .app import create_app
 from .config import jwt_config
@@ -149,7 +151,7 @@ async def sign_in_page(request: Request, Authorize: AuthJWT = Depends()) -> Resp
     raise NotImplementedError
 
 
-app.get("/sign-up")
+@app.get("/sign-up")
 async def sign_up_page(request: Request, Authorize: AuthJWT = Depends()) -> Response:
     """
     Return sign-up form if user is not signed in
@@ -164,3 +166,29 @@ async def sign_up_page(request: Request, Authorize: AuthJWT = Depends()) -> Resp
 
     # return frame with sign-up form
     raise NotImplementedError
+
+
+@app.get("/ping-task")
+async def ping_task_service() -> Response:
+    """Checks availability of tasks microservice"""
+    client = RPCClient(
+        queue_name= "tasks",
+        broker_url=app.config.RABBITMQ_URL
+    )
+    await client.connect()
+    response = await client.call(text="ping")
+
+    return JSONResponse(json.loads(response.decode()))
+
+
+@app.get("/ping-billing")
+async def ping_billing_service() -> Response:
+    """Checks availability of billing microservice"""
+    client = RPCClient(
+        queue_name= "billing",
+        broker_url=app.config.RABBITMQ_URL
+    )
+    await client.connect()
+    response = await client.call(text="ping")
+
+    return JSONResponse(json.loads(response.decode()))
