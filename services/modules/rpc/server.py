@@ -9,18 +9,18 @@ from aio_pika.abc import AbstractIncomingMessage
 class RPCServer:
     """RPC server that handles messages from given queue"""
 
-    def __init__(self, queue_name: str, broker_url: str) -> None:
-        self.queue_name = queue_name
+    def __init__(self, broker_url: str) -> None:
         self.broker_url = broker_url
 
     async def handle_message(self, message_body: dict) -> any:
         """Handles message body"""
         raise NotImplementedError
 
-    async def listen(self) -> None:
+    async def listen(self, queue_name: str) -> None:
+        """Listens on queue infinitely"""
         connection = await connect(os.environ.get('RMQ_URL'))
         channel = await connection.channel()
-        queue = await channel.declare_queue(self.queue_name)
+        queue = await channel.declare_queue(queue_name)
 
         print("Awaiting RPC requests")
 
@@ -41,6 +41,6 @@ class RPCServer:
                             correlation_id=message.correlation_id,
                         ),
                         routing_key=message.reply_to,
-                        timeout=30
+                        timeout=100
                     )
                     print(f"Request {message.message_id} complete")

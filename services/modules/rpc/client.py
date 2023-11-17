@@ -17,17 +17,22 @@ class RPCClient:
     channel: AbstractChannel
     callback_queue: AbstractQueue
 
-    def __init__(self, queue_name: str, broker_url: str) -> None:
-        self.queue_name = queue_name
+    def __init__(self, broker_url: str) -> None:
         self.broker_url = broker_url
         self.futures: MutableMapping[str, asyncio.Future] = {}
 
     async def connect(self):
-        """Creates connection and sets callback queue"""
         self.connection = await connect(self.broker_url)
         self.channel = await self.connection.channel()
-        self.callback_queue = await self.channel.declare_queue(exclusive=True)
-        await self.callback_queue.consume(self.on_response, no_ack=True)
+
+    async def close(self):
+        self.channel.close()
+        await self.connection.close()
+
+    async def consume(self, queue_name: str):
+        """Consumes certain queue"""
+        queue = await self.channel.declare_queue(name=queue_name, exclusive=True)
+        await queue.consume(self.on_response, no_ack=True)
 
     async def on_response(self, message: AbstractIncomingMessage) -> None:
         """Handles response"""
@@ -38,7 +43,7 @@ class RPCClient:
         future: asyncio.Future = self.futures.pop(message.correlation_id)
         future.set_result(message.body)
 
-    async def call(self, **kwargs):
+    async def call(self, queue_name: str, callback_queue_name: str, message_body: dict):
         """Sends message to RPC server"""
         correlation_id = str(uuid.uuid4())
         loop = asyncio.get_running_loop()
@@ -48,13 +53,13 @@ class RPCClient:
 
         await self.channel.default_exchange.publish(
             Message(
-                body=json.dumps(kwargs).encode("utf-8"),
+                body=json.dumps(message_body).encode("utf-8"),
                 content_type="text/plain",
                 correlation_id=correlation_id,
-                reply_to=self.callback_queue.name,
+                reply_to=callback_queue_name,
             ),
-            routing_key=self.queue_name,
-            timeout=30
+            routing_key=queue_name,
+            timeout=100
         )
 
         return await future

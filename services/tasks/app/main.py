@@ -14,9 +14,5 @@ class TasksRPCServer(RPCServer):
 
 
 if __name__ == "__main__":
-    server = TasksRPCServer(
-        queue_name=config.QUEUE_NAME,
-        broker_url=config.RABBITMQ_URL
-    )
-
-    asyncio.run(server.listen())
+    server = TasksRPCServer(broker_url=config.RABBITMQ_URL)
+    asyncio.run(server.listen(config.QUEUE_NAME))

@@ -14,9 +14,5 @@ class BillingRPCServer(RPCServer):
 
 
 if __name__ == "__main__":
-    server = BillingRPCServer(
-        queue_name=config.QUEUE_NAME,
-        broker_url=config.RABBITMQ_URL
-    )
-
-    asyncio.run(server.listen())
+    server = BillingRPCServer(broker_url=config.RABBITMQ_URL)
+    asyncio.run(server.listen(config.QUEUE_NAME))

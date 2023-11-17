@@ -6,7 +6,6 @@ from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
 from sqlalchemy.exc import IntegrityError
 from starlette.responses import JSONResponse
-from modules.rpc.client import RPCClient
 
 from .app import create_app
 from .config import jwt_config
@@ -16,6 +15,16 @@ from .utils import hash_password, verify_password
 
 
 app = create_app()
+
+
+@app.on_event("startup")
+async def prepare_rabbitmq_client():
+    await app.rabbitmq_client.connect()
+
+
+@app.on_event("shutdown")
+async def prepare_rabbitmq_client():
+    await app.rabbitmq_client.close()
 
 
 denylist = set()
@@ -171,12 +180,10 @@ async def sign_up_page(request: Request, Authorize: AuthJWT = Depends()) -> Resp
 @app.get("/ping-task")
 async def ping_task_service() -> Response:
     """Checks availability of tasks microservice"""
-    client = RPCClient(
-        queue_name= "tasks",
-        broker_url=app.config.RABBITMQ_URL
-    )
-    await client.connect()
-    response = await client.call(text="ping")
+    callback_queue_name = 'tasks-callback'
+
+    await app.rabbitmq_client.consume(callback_queue_name)
+    response = await app.rabbitmq_client.call('tasks', callback_queue_name, {'text': 'ping'})
 
     return JSONResponse(json.loads(response.decode()))
 
@@ -184,11 +191,9 @@ async def ping_task_service() -> Response:
 @app.get("/ping-billing")
 async def ping_billing_service() -> Response:
     """Checks availability of billing microservice"""
-    client = RPCClient(
-        queue_name= "billing",
-        broker_url=app.config.RABBITMQ_URL
-    )
-    await client.connect()
-    response = await client.call(text="ping")
+    callback_queue_name = 'billing-callback'
+
+    await app.rabbitmq_client.consume(callback_queue_name)
+    response = await app.rabbitmq_client.call('billing', callback_queue_name, {'text': 'ping'})
 
     return JSONResponse(json.loads(response.decode()))

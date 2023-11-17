@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from modules.rpc.client import RPCClient
 
 from .config import config
 from .db import recreate_db
@@ -11,8 +12,8 @@ from .db import recreate_db
 
 def create_app() -> FastAPI:
     """Application instance creation"""
-    app = FastAPI(title=config.PROJECT_NAME, version="0.1", docs_url="/api")
-    app.config = config
+    app = FastAPI(title=config.PROJECT_NAME, version="0.1", docs_url="/api/docs")
+    app.rabbitmq_client = RPCClient(broker_url=config.RABBITMQ_URL)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
