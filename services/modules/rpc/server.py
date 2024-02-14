@@ -1,10 +1,10 @@
 import asyncio
 import json
-import os
 from typing import Awaitable
 
-from aio_pika import Message, connect
-from aio_pika.abc import AbstractIncomingMessage
+from aio_pika import Message
+from aio_pika.abc import AbstractIncomingMessage, AbstractConnection, AbstractChannel
+from modules.app.config import get_logger
 
 
 class RPCServer:
@@ -12,8 +12,17 @@ class RPCServer:
 
     QUEUE_NAME_TO_HANDLER: dict = NotImplemented
 
-    def __init__(self, broker_url: str) -> None:
-        self._broker_url = broker_url
+    _channel: AbstractChannel
+
+    def __init__(self, connection: AbstractConnection) -> None:
+        self._connection = connection
+        self._logger = get_logger()
+
+    async def create_channel(self) -> Awaitable[None]:
+        self._channel = await self._connection.channel()
+
+    async def close_channel(self) -> Awaitable[None]:
+        await self._channel.close()
 
     async def _listen(self, queue_name: str) -> Awaitable[None]:
         if queue_name not in self.QUEUE_NAME_TO_HANDLER:
@@ -22,11 +31,9 @@ class RPCServer:
                 'all queues and their handlers should be declared in class {self.__classname__}'
             )
 
-        connection = await connect(self._broker_url)
-        channel = await connection.channel()
-        queue = await channel.declare_queue(queue_name)
+        queue = await self._channel.declare_queue(queue_name)
 
-        print(f"Awaiting RPC requests from queue {queue_name}")
+        self._logger.info("Awaiting RPC requests from queue %s", queue_name)
 
         async with queue.iterator() as qiterator:
             message: AbstractIncomingMessage
@@ -35,18 +42,18 @@ class RPCServer:
                     assert message.reply_to is not None
 
                     message_body = json.loads(message.body.decode())
-                    print(f"Recieved request ({message.message_id}): {message_body}")
+                    self._logger.info("Recieved request (%s): %s", message.message_id, message_body)
                     response = await getattr(self, self.QUEUE_NAME_TO_HANDLER[queue_name])(message_body)
 
-                    await channel.default_exchange.publish(
+                    await self._channel.default_exchange.publish(
                         Message(
                             body=json.dumps(response).encode("utf-8"),
                             correlation_id=message.correlation_id,
                         ),
                         routing_key=message.reply_to,
-                        timeout=100
+                        timeout=5
                     )
-                    print(f"Request {message.message_id} complete")
+                    self._logger.info("Request %s complete", message.message_id)
 
     async def listen(self) -> Awaitable[None]:
         """Listens on all defined queues infinitely"""

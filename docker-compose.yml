@@ -34,6 +34,9 @@ services:
       - 'gateway-postgres'
       - 'rabbitmq'
     command: bash -c "wait-for-it -s rabbitmq:15672 && uvicorn app.asgi:app --host=0.0.0.0 --port=8001"
+    volumes:
+      - ./services/gateway:/gateway
+      - ./services/modules:/gateway/modules
   
   gateway-postgres:
     image: 'postgres:10.6'
@@ -63,6 +66,9 @@ services:
       - 'billing-postgres'
       - 'rabbitmq'
     command: bash -c "wait-for-it -s rabbitmq:15672 && uvicorn app.asgi:app --host=0.0.0.0 --port=8002"
+    volumes:
+      - ./services/billing:/billing
+      - ./services/modules:/billing/modules
   
   billing-postgres:
     image: 'postgres:10.6'
@@ -92,7 +98,10 @@ services:
       - 'tasks-postgres'
       - 'rabbitmq'
     command: bash -c "wait-for-it -s rabbitmq:15672 && uvicorn app.asgi:app --host=0.0.0.0 --port=8003"
-  
+    volumes:
+      - ./services/tasks:/tasks
+      - ./services/modules:/tasks/modules
+
   tasks-postgres:
     image: 'postgres:10.6'
     restart: always
