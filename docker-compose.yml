@@ -24,6 +24,7 @@ services:
       - '8001:8001'
     restart: always
     environment:
+      PYTHONUNBUFFERED: 1
       PG_URL: 'postgresql://${GATEWAY_PG_USER}:${GATEWAY_PG_PASS}@gateway-postgres:5432/${GATEWAY_PG_DB}'
       RMQ_URL: 'amqp://rabbitmq:5672/'
       JWT_SECRET_KEY: '${JWT_SECRET_KEY}'
@@ -32,7 +33,7 @@ services:
     depends_on:
       - 'gateway-postgres'
       - 'rabbitmq'
-    command: bash -c "uvicorn app.asgi:app --host=0.0.0.0 --port=8001"
+    command: bash -c "wait-for-it -s rabbitmq:15672 && uvicorn app.asgi:app --host=0.0.0.0 --port=8001"
   
   gateway-postgres:
     image: 'postgres:10.6'
@@ -51,6 +52,8 @@ services:
       dockerfile: ./billing/Dockerfile
     image: billing
     container_name: billing
+    ports:
+      - '8002:8002'
     restart: always
     environment:
       PYTHONUNBUFFERED: 1
@@ -59,7 +62,7 @@ services:
     depends_on:
       - 'billing-postgres'
       - 'rabbitmq'
-    command: bash -c "python3 -m app.main"
+    command: bash -c "wait-for-it -s rabbitmq:15672 && uvicorn app.asgi:app --host=0.0.0.0 --port=8002"
   
   billing-postgres:
     image: 'postgres:10.6'
@@ -78,6 +81,8 @@ services:
       dockerfile: ./tasks/Dockerfile
     image: tasks
     container_name: tasks
+    ports:
+      - '8003:8003'
     restart: always
     environment:
       PYTHONUNBUFFERED: 1
@@ -86,7 +91,7 @@ services:
     depends_on:
       - 'tasks-postgres'
       - 'rabbitmq'
-    command: bash -c "python3 -m app.main"
+    command: bash -c "wait-for-it -s rabbitmq:15672 && uvicorn app.asgi:app --host=0.0.0.0 --port=8003"
   
   tasks-postgres:
     image: 'postgres:10.6'

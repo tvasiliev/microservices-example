@@ -11,3 +11,4 @@ psycopg2-binary>=2.9
 debugpy>=1.5
 httpx>=0.23
 aio-pika>=9.3
+wait-for-it>=2.2

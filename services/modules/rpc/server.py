@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from typing import Awaitable
 
 from aio_pika import Message, connect
 from aio_pika.abc import AbstractIncomingMessage
@@ -9,20 +10,23 @@ from aio_pika.abc import AbstractIncomingMessage
 class RPCServer:
     """RPC server that handles messages from given queue"""
 
+    QUEUE_NAME_TO_HANDLER: dict = NotImplemented
+
     def __init__(self, broker_url: str) -> None:
-        self.broker_url = broker_url
+        self._broker_url = broker_url
 
-    async def handle_message(self, message_body: dict) -> any:
-        """Handles message body"""
-        raise NotImplementedError
+    async def _listen(self, queue_name: str) -> Awaitable[None]:
+        if queue_name not in self.QUEUE_NAME_TO_HANDLER:
+            raise ValueError(
+                f'Cannot listen to queue "{queue_name}": '
+                'all queues and their handlers should be declared in class {self.__classname__}'
+            )
 
-    async def listen(self, queue_name: str) -> None:
-        """Listens on queue infinitely"""
-        connection = await connect(os.environ.get('RMQ_URL'))
+        connection = await connect(self._broker_url)
         channel = await connection.channel()
         queue = await channel.declare_queue(queue_name)
 
-        print("Awaiting RPC requests")
+        print(f"Awaiting RPC requests from queue {queue_name}")
 
         async with queue.iterator() as qiterator:
             message: AbstractIncomingMessage
@@ -32,8 +36,7 @@ class RPCServer:
 
                     message_body = json.loads(message.body.decode())
                     print(f"Recieved request ({message.message_id}): {message_body}")
-
-                    response = await self.handle_message(message_body)
+                    response = await getattr(self, self.QUEUE_NAME_TO_HANDLER[queue_name])(message_body)
 
                     await channel.default_exchange.publish(
                         Message(
@@ -44,3 +47,7 @@ class RPCServer:
                         timeout=100
                     )
                     print(f"Request {message.message_id} complete")
+
+    async def listen(self) -> Awaitable[None]:
+        """Listens on all defined queues infinitely"""
+        await asyncio.gather(*(self._listen(queue_name) for queue_name in self.QUEUE_NAME_TO_HANDLER))

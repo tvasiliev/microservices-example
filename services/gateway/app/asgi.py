@@ -6,28 +6,19 @@ from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
 from sqlalchemy.exc import IntegrityError
 from starlette.responses import JSONResponse
+from modules.app.app import create_app
 
-from .app import create_app
-from .config import jwt_config
+from .config import jwt_config, config
 from .db import Session, User
 from .models import UserJSON, UserSignUpJSON
 from .utils import hash_password, verify_password
+from .rpc.server import GatewayRPCServer
 
 
-app = create_app()
+app = create_app(rpc_server=GatewayRPCServer, config=config)
 
 
-@app.on_event("startup")
-async def prepare_rabbitmq_client():
-    await app.rabbitmq_client.connect()
-
-
-@app.on_event("shutdown")
-async def prepare_rabbitmq_client():
-    await app.rabbitmq_client.close()
-
-
-denylist = set()
+denied_tokens = set()
 
 
 @AuthJWT.load_config
@@ -39,7 +30,7 @@ def get_config():
 @AuthJWT.token_in_denylist_loader
 def check_if_token_in_denylist(decrypted_token) -> bool:
     jti = decrypted_token["jti"]
-    return jti in denylist
+    return jti in denied_tokens
 
 
 @app.exception_handler(AuthJWTException)
@@ -136,10 +127,10 @@ async def main_page(request: Request, Authorize: AuthJWT = Depends()) -> Respons
 
     current_user = Authorize.get_jwt_subject()
     if current_user is not None:
-        # return frame with 'signed in' header
+        # TODO: return frame with 'signed in' header
         raise NotImplementedError
 
-    # return frame with 'not signed in' header
+    # TODO: return frame with 'not signed in' header
     return app.templates.TemplateResponse("index.html", {"request": request, "user": None})
 
 
@@ -153,10 +144,10 @@ async def sign_in_page(request: Request, Authorize: AuthJWT = Depends()) -> Resp
 
     current_user = Authorize.get_jwt_subject()
     if current_user is not None:
-        # redirect to main page
+        # TODO: redirect to main page
         raise NotImplementedError
 
-    # return frame with sign-in form
+    # TODO: return frame with sign-in form
     raise NotImplementedError
 
 
@@ -170,20 +161,20 @@ async def sign_up_page(request: Request, Authorize: AuthJWT = Depends()) -> Resp
 
     current_user = Authorize.get_jwt_subject()
     if current_user is not None:
-        # redirect to main page
+        # TODO: redirect to main page
         raise NotImplementedError
 
-    # return frame with sign-up form
+    # TODO: return frame with sign-up form
     raise NotImplementedError
 
 
 @app.get("/ping-task")
 async def ping_task_service() -> Response:
     """Checks availability of tasks microservice"""
-    callback_queue_name = 'tasks-callback'
+    callback_queue_name = 'gateway.tasks-request-callback'
 
     await app.rabbitmq_client.consume(callback_queue_name)
-    response = await app.rabbitmq_client.call('tasks', callback_queue_name, {'text': 'ping'})
+    response = await app.rabbitmq_client.call('tasks.ping', callback_queue_name, {'text': 'ping from gateway'})
 
     return JSONResponse(json.loads(response.decode()))
 
@@ -191,9 +182,9 @@ async def ping_task_service() -> Response:
 @app.get("/ping-billing")
 async def ping_billing_service() -> Response:
     """Checks availability of billing microservice"""
-    callback_queue_name = 'billing-callback'
+    callback_queue_name = 'gateway.billing-request-callback'
 
     await app.rabbitmq_client.consume(callback_queue_name)
-    response = await app.rabbitmq_client.call('billing', callback_queue_name, {'text': 'ping'})
+    response = await app.rabbitmq_client.call('billing.ping', callback_queue_name, {'text': 'ping from gateway'})
 
     return JSONResponse(json.loads(response.decode()))

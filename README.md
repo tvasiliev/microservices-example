@@ -17,6 +17,10 @@ This will cause all services to build and run. If you want to run certain servic
 ## Services documentation
 `http://localhost:8001/api/docs` - Gateway API explanation
 
+`http://localhost:8002/api/docs` - Billing API explanation
+
+`http://localhost:8003/api/docs` - Tasks API explanation
+
 ## Autotests
 In order to run autotests you should execute the following set of commands:
 
