@@ -7,9 +7,10 @@ from starlette.responses import JSONResponse
 
 from .config import config
 from .rpc.server import BillingRPCServer
+from .db import BillingDBManager
 
 
-app = create_app(rpc_server=BillingRPCServer, config=config)
+app = create_app(rpc_server=BillingRPCServer, config=config, database_manager=BillingDBManager)
 
 
 @app.get("/ping-gateway")

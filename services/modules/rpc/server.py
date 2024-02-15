@@ -4,7 +4,7 @@ from typing import Awaitable
 
 from aio_pika import Message
 from aio_pika.abc import AbstractIncomingMessage, AbstractConnection, AbstractChannel
-from modules.app.config import get_logger
+from modules.log import get_logger
 
 
 class RPCServer:

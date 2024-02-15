@@ -1,8 +1,3 @@
-import json
-
-import bs4
-
-
 def test_auth(client, clean_test_data) -> None:
     """Authentication scenarios check"""
     response = client.post("/sign-out")

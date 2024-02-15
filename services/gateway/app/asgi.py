@@ -9,13 +9,13 @@ from starlette.responses import JSONResponse
 from modules.app.app import create_app
 
 from .config import jwt_config, config
-from .db import Session, User
+from .db import User, GatewayDBManager
 from .models import UserJSON, UserSignUpJSON
 from .utils import hash_password, verify_password
 from .rpc.server import GatewayRPCServer
 
 
-app = create_app(rpc_server=GatewayRPCServer, config=config)
+app = create_app(rpc_server=GatewayRPCServer, config=config, database_manager=GatewayDBManager)
 
 
 denied_tokens = set()
@@ -54,8 +54,8 @@ async def sign_in(user: UserJSON, Authorize: AuthJWT = Depends()) -> JSONRespons
         )
 
     user = user.dict()
-    s = Session()
-    user_entry = s.query(User).filter_by(email=user["email"]).first()
+    session = app.db_manager.session()
+    user_entry = session.query(User).filter_by(email=user["email"]).first()
     if not user_entry or not verify_password(
         user["password"], user_entry.password_hash
     ):
@@ -91,7 +91,7 @@ async def sign_up(user: UserSignUpJSON, Authorize: AuthJWT = Depends()) -> JSONR
     user["password_hash"] = hash_password(user["password"])
     del user["password"]
 
-    s = Session()
+    s = app.db_manager.session()
     s.add(User(**user, role_id=1))
     try:
         s.commit()

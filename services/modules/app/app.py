@@ -1,6 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Any
+from typing import AsyncGenerator, Any, TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,13 +11,21 @@ from modules.rpc.utils import create_connection
 
 from .utils import add_task_to_loop
 
+if TYPE_CHECKING:
+    from modules.db import DBManager
+    from modules.rpc.server import RPCServer
+    from pydantic import BaseModel
 
-def create_app(rpc_server, config) -> FastAPI:
+
+def create_app(rpc_server: 'RPCServer', config: 'BaseModel', database_manager: 'DBManager') -> FastAPI:
     """Application instance creation"""
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[Any, None]:
         """FastAPI app lifespan with RabbitMQ connection management"""
+        app.db_manager = database_manager(config.POSTGRES_URL)
+        app.db_manager.add_absent_data_to_db()
+
         rabbitmq_connection = await create_connection(broker_url=config.RABBITMQ_URL)
 
         app.rabbitmq_client = RPCClient(rabbitmq_connection)

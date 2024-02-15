@@ -7,9 +7,10 @@ from starlette.responses import JSONResponse
 
 from .config import config
 from .rpc.server import TasksRPCServer
+from .db import TasksDBManager
 
 
-app = create_app(rpc_server=TasksRPCServer, config=config)
+app = create_app(rpc_server=TasksRPCServer, config=config, database_manager=TasksDBManager)
 
 
 @app.get("/ping-gateway")

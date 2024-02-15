@@ -8,7 +8,7 @@ from aio_pika import Message
 from aio_pika.abc import (
     AbstractChannel, AbstractConnection, AbstractIncomingMessage, AbstractQueue,
 )
-from modules.app.config import get_logger
+from modules.log import get_logger
 
 
 class RPCClient:

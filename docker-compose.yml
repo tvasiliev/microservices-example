@@ -30,6 +30,7 @@ services:
       JWT_SECRET_KEY: '${JWT_SECRET_KEY}'
       JWT_PUBLIC_KEY: '${JWT_PUBLIC_KEY}'
       JWT_PRIVATE_KEY: '${JWT_PRIVATE_KEY}'
+      LOGGER_NAME: 'Gateway'
     depends_on:
       - 'gateway-postgres'
       - 'rabbitmq'
@@ -47,7 +48,7 @@ services:
       POSTGRES_DB: '${GATEWAY_PG_DB}'
       PGDATA: '/tmp'
     volumes:
-      - ./postgres-gtw-data:/var/lib/postgresql/data
+      - ./postgres-gateway-data:/var/lib/postgresql/data
 
   billing:
     build: 
@@ -62,6 +63,7 @@ services:
       PYTHONUNBUFFERED: 1
       PG_URL: 'postgresql://${BILLING_PG_USER}:${BILLING_PG_PASS}@billing-postgres:5432/${BILLING_PG_DB}'
       RMQ_URL: 'amqp://rabbitmq:5672/'
+      LOGGER_NAME: 'Billing'
     depends_on:
       - 'billing-postgres'
       - 'rabbitmq'
@@ -79,7 +81,7 @@ services:
       POSTGRES_DB: '${BILLING_PG_DB}'
       PGDATA: '/tmp'
     volumes:
-      - ./postgres-bll-data:/var/lib/postgresql/data
+      - ./postgres-billing-data:/var/lib/postgresql/data
 
   tasks:
     build: 
@@ -94,6 +96,7 @@ services:
       PYTHONUNBUFFERED: 1
       PG_URL: 'postgresql://${TASKS_PG_USER}:${TASKS_PG_PASS}@tasks-postgres:5432/${TASKS_PG_DB}'
       RMQ_URL: 'amqp://rabbitmq:5672/'
+      LOGGER_NAME: 'Tasks'
     depends_on:
       - 'tasks-postgres'
       - 'rabbitmq'
@@ -111,4 +114,4 @@ services:
       POSTGRES_DB: '${TASKS_PG_DB}'
       PGDATA: '/tmp'
     volumes:
-      - ./postgres-tsk-data:/var/lib/postgresql/data
+      - ./postgres-tasks-data:/var/lib/postgresql/data
