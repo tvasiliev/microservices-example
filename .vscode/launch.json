@@ -1,0 +1,43 @@
+{
+    "configurations": [
+        {
+            "name": "Remote debug (Gateway)",
+            "type": "python",
+            "request": "attach",
+            "port": 5678,
+            "host": "127.0.0.1",
+            "pathMappings": [
+                {
+                  "localRoot": "${workspaceFolder}/services/gateway",
+                  "remoteRoot": "."
+                }
+              ]
+        },
+        {
+            "name": "Remote debug (Billing)",
+            "type": "python",
+            "request": "attach",
+            "port": 5679,
+            "host": "127.0.0.1",
+            "pathMappings": [
+                {
+                  "localRoot": "${workspaceFolder}/services/billing",
+                  "remoteRoot": "."
+                }
+              ]
+        },
+        {
+            "name": "Remote debug (Tasks)",
+            "type": "python",
+            "request": "attach",
+            "port": 5680,
+            "host": "127.0.0.1",
+            "pathMappings": [
+                {
+                  "localRoot": "${workspaceFolder}/services/tasks",
+                  "remoteRoot": "."
+                }
+              ]
+        },
+    ]
+}

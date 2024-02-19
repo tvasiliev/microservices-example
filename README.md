@@ -31,3 +31,11 @@ pytest -vv --cov=app tests/
 ```
 
 Right now you can run autotests only for gateway's auth part.
+
+## Debug
+
+Remote debugger configuration is available (uses debugpy). There is remote debugger for every service in the project. To start debugging, proceed with the following command:
+
+`docker-compose -f docker-compose-debug.yml up`
+
+After that you may start 1 debugger per VSCode process. 

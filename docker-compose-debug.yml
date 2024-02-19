@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: "rabbitmq:3.9.13-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - './rabbitmq-data:/data'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  gateway:
+    build: 
+      context: ./services/
+      dockerfile: ./gateway/Dockerfile
+    image: gateway
+    container_name: gateway
+    ports:
+      - '8001:8001'
+      - '5678:5678'
+    restart: always
+    environment:
+      PYTHONUNBUFFERED: 1
+      PG_URL: 'postgresql://${GATEWAY_PG_USER}:${GATEWAY_PG_PASS}@gateway-postgres:5432/${GATEWAY_PG_DB}'
+      RMQ_URL: 'amqp://rabbitmq:5672/'
+      JWT_SECRET_KEY: '${JWT_SECRET_KEY}'
+      JWT_PUBLIC_KEY: '${JWT_PUBLIC_KEY}'
+      JWT_PRIVATE_KEY: '${JWT_PRIVATE_KEY}'
+      LOGGER_NAME: 'Gateway'
+    depends_on:
+      - 'gateway-postgres'
+      - 'rabbitmq'
+    command: bash -c "wait-for-it -s rabbitmq:15672 && python -m debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn app.asgi:app --host=0.0.0.0 --port=8001"
+    volumes:
+      - ./services/gateway:/gateway
+      - ./services/modules:/gateway/modules
+  
+  gateway-postgres:
+    image: 'postgres:10.6'
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: '${GATEWAY_PG_PASS}'
+      POSTGRES_USER: '${GATEWAY_PG_USER}'
+      POSTGRES_DB: '${GATEWAY_PG_DB}'
+      PGDATA: '/tmp'
+    volumes:
+      - ./postgres-gateway-data:/var/lib/postgresql/data
+
+  billing:
+    build: 
+      context: ./services/
+      dockerfile: ./billing/Dockerfile
+    image: billing
+    container_name: billing
+    ports:
+      - '8002:8002'
+      - '5679:5679'
+    restart: always
+    environment:
+      PYTHONUNBUFFERED: 1
+      PG_URL: 'postgresql://${BILLING_PG_USER}:${BILLING_PG_PASS}@billing-postgres:5432/${BILLING_PG_DB}'
+      RMQ_URL: 'amqp://rabbitmq:5672/'
+      LOGGER_NAME: 'Billing'
+    depends_on:
+      - 'billing-postgres'
+      - 'rabbitmq'
+    command: bash -c "wait-for-it -s rabbitmq:15672 && python -m debugpy --wait-for-client --listen 0.0.0.0:5679 -m uvicorn app.asgi:app --host=0.0.0.0 --port=8002"
+    volumes:
+      - ./services/billing:/billing
+      - ./services/modules:/billing/modules
+  
+  billing-postgres:
+    image: 'postgres:10.6'
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: '${BILLING_PG_PASS}'
+      POSTGRES_USER: '${BILLING_PG_USER}'
+      POSTGRES_DB: '${BILLING_PG_DB}'
+      PGDATA: '/tmp'
+    volumes:
+      - ./postgres-billing-data:/var/lib/postgresql/data
+
+  tasks:
+    build: 
+      context: ./services/
+      dockerfile: ./tasks/Dockerfile
+    image: tasks
+    container_name: tasks
+    ports:
+      - '8003:8003'
+      - '5680:5680'
+    restart: always
+    environment:
+      PYTHONUNBUFFERED: 1
+      PG_URL: 'postgresql://${TASKS_PG_USER}:${TASKS_PG_PASS}@tasks-postgres:5432/${TASKS_PG_DB}'
+      RMQ_URL: 'amqp://rabbitmq:5672/'
+      LOGGER_NAME: 'Tasks'
+    depends_on:
+      - 'tasks-postgres'
+      - 'rabbitmq'
+    command: bash -c "wait-for-it -s rabbitmq:15672 && python -m debugpy --wait-for-client --listen 0.0.0.0:5680 -m uvicorn app.asgi:app --host=0.0.0.0 --port=8003"
+    volumes:
+      - ./services/tasks:/tasks
+      - ./services/modules:/tasks/modules
+
+  tasks-postgres:
+    image: 'postgres:10.6'
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: '${TASKS_PG_PASS}'
+      POSTGRES_USER: '${TASKS_PG_USER}'
+      POSTGRES_DB: '${TASKS_PG_DB}'
+      PGDATA: '/tmp'
+    volumes:
+      - ./postgres-tasks-data:/var/lib/postgresql/data

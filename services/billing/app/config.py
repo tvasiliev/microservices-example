@@ -7,7 +7,7 @@ class Config(BaseSettings):
     """Application configuration"""
 
     PROJECT_NAME = "Billing Service"
-    QUEUE_NAME = "billing"
+    POSTGRES_URL: str = os.environ.get("PG_URL")
     RABBITMQ_URL = os.environ.get("RMQ_URL")
 
 
