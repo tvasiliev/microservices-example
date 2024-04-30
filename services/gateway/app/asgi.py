@@ -168,13 +168,14 @@ async def sign_up_page(request: Request, Authorize: AuthJWT = Depends()) -> Resp
     raise NotImplementedError
 
 
-@app.get("/ping-task")
+@app.get("/ping-tasks")
 async def ping_task_service() -> Response:
     """Checks availability of tasks microservice"""
-    callback_queue_name = 'gateway.tasks-request-callback'
-
-    await app.rabbitmq_client.consume(callback_queue_name)
-    response = await app.rabbitmq_client.call('tasks.ping', callback_queue_name, {'text': 'ping from gateway'})
+    response = await app.rabbitmq_client.request(
+        'tasks.ping',
+        'gateway.tasks-request-callback', 
+        {'text': 'ping from gateway'}
+    )
 
     return JSONResponse(json.loads(response.decode()))
 
@@ -182,9 +183,10 @@ async def ping_task_service() -> Response:
 @app.get("/ping-billing")
 async def ping_billing_service() -> Response:
     """Checks availability of billing microservice"""
-    callback_queue_name = 'gateway.billing-request-callback'
-
-    await app.rabbitmq_client.consume(callback_queue_name)
-    response = await app.rabbitmq_client.call('billing.ping', callback_queue_name, {'text': 'ping from gateway'})
+    response = await app.rabbitmq_client.request(
+        'billing.ping', 
+        'gateway.billing-request-callback',
+        {'text': 'ping from gateway'}
+    )
 
     return JSONResponse(json.loads(response.decode()))

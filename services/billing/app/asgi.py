@@ -14,22 +14,24 @@ app = create_app(rpc_server=BillingRPCServer, config=config, database_manager=Bi
 
 
 @app.get("/ping-gateway")
-async def ping_task_service() -> Response:
+async def ping_gateway_service() -> Response:
     """Checks availability of gateway microservice"""
-    callback_queue_name = 'billing.gateway-request-callback'
-
-    await app.rabbitmq_client.consume(callback_queue_name)
-    response = await app.rabbitmq_client.call('gateway.ping', callback_queue_name, {'text': 'ping from billing'})
+    response = await app.rabbitmq_client.request(
+        'gateway.ping', 
+        'billing.gateway-request-callback',
+        {'text': 'ping from billing'}
+    )
 
     return JSONResponse(json.loads(response.decode()))
 
 
 @app.get("/ping-tasks")
-async def ping_billing_service() -> Response:
+async def ping_tasks_service() -> Response:
     """Checks availability of tasks microservice"""
-    callback_queue_name = 'billing.tasks-request-callback'
-
-    await app.rabbitmq_client.consume(callback_queue_name)
-    response = await app.rabbitmq_client.call('tasks.ping', callback_queue_name, {'text': 'ping from billing'})
+    response = await app.rabbitmq_client.request(
+        'tasks.ping',
+        'billing.tasks-request-callback',
+        {'text': 'ping from billing'}
+    )
 
     return JSONResponse(json.loads(response.decode()))

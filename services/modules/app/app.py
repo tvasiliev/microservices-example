@@ -6,14 +6,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from modules.rpc.client import RPCClient
-from modules.rpc.utils import create_connection
+from modules.rabbitmq.rpc.client import RPCClient
+from modules.rabbitmq.client import create_connection
 
 from .utils import add_task_to_loop
 
 if TYPE_CHECKING:
     from modules.db import DBManager
-    from modules.rpc.server import RPCServer
+    from modules.rabbitmq.rpc.server import RPCServer
     from pydantic import BaseModel
 
 
@@ -26,22 +26,34 @@ def create_app(rpc_server: 'RPCServer', config: 'BaseModel', database_manager: '
         app.db_manager = database_manager(config.POSTGRES_URL)
         app.db_manager.add_absent_data_to_db()
 
-        rabbitmq_connection = await create_connection(broker_url=config.RABBITMQ_URL)
+        rmq_input_connection = await create_connection(broker_url=config.RABBITMQ_URL)
+        rmq_output_connection = await create_connection(broker_url=config.RABBITMQ_URL)
+        # separate connections help to read messages when flow control regulates connetion with high amount of sendings
 
-        app.rabbitmq_client = RPCClient(rabbitmq_connection)
-        await app.rabbitmq_client.create_channel()
+        app.rabbitmq_client = RPCClient(
+            rmq_input_connection,
+            rmq_output_connection,
+            config.CLIENT_PUBLISH_RETRIES
+        )
+        await app.rabbitmq_client.open_channels()
 
-        app.rabbitmq_server = rpc_server(rabbitmq_connection)
-        await app.rabbitmq_server.create_channel()
+        app.rabbitmq_server = rpc_server(
+            rmq_input_connection,
+            rmq_output_connection,
+            config.SERVER_PUBLISH_RETRIES
+        )
+        await app.rabbitmq_server.open_channels()
 
         add_task_to_loop(app.rabbitmq_server.listen())
+        # listens on the declared queues infinitely
 
         yield
 
-        # gracefully closing connection
-        await app.rabbitmq_client.close_channel()
-        await app.rabbitmq_server.close_channel()
-        await rabbitmq_connection.close()
+        # gracefully closing channels and connections
+        await app.rabbitmq_client.close_channels()
+        await app.rabbitmq_server.close_channels()
+        await rmq_input_connection.close()
+        await rmq_output_connection.close()
 
     app = FastAPI(title=config.PROJECT_NAME, version="0.1", docs_url="/api/docs", lifespan=lifespan)
     app.add_middleware(

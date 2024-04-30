@@ -1,4 +1,4 @@
-from modules.rpc.server import RPCServer
+from modules.rabbitmq.rpc.server import RPCServer
 
 
 class TasksRPCServer(RPCServer):

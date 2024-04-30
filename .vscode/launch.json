@@ -8,9 +8,17 @@
             "host": "127.0.0.1",
             "pathMappings": [
                 {
-                  "localRoot": "${workspaceFolder}/services/gateway",
-                  "remoteRoot": "."
-                }
+                  "localRoot": "${workspaceFolder}/services/modules",
+                  "remoteRoot": "./modules"
+                },
+                {
+                  "localRoot": "${workspaceFolder}/services/gateway/app",
+                  "remoteRoot": "./app"
+                },
+                {
+                  "localRoot": "${workspaceFolder}/services/gateway/tests",
+                  "remoteRoot": "./tests"
+                },
               ]
         },
         {
@@ -20,10 +28,18 @@
             "port": 5679,
             "host": "127.0.0.1",
             "pathMappings": [
-                {
-                  "localRoot": "${workspaceFolder}/services/billing",
-                  "remoteRoot": "."
-                }
+              {
+                "localRoot": "${workspaceFolder}/services/modules",
+                "remoteRoot": "./modules"
+              },
+              {
+                "localRoot": "${workspaceFolder}/services/billing/app",
+                "remoteRoot": "./app"
+              },
+              {
+                "localRoot": "${workspaceFolder}/services/billing/tests",
+                "remoteRoot": "./tests"
+              },
               ]
         },
         {
@@ -33,10 +49,18 @@
             "port": 5680,
             "host": "127.0.0.1",
             "pathMappings": [
-                {
-                  "localRoot": "${workspaceFolder}/services/tasks",
-                  "remoteRoot": "."
-                }
+              {
+                "localRoot": "${workspaceFolder}/services/modules",
+                "remoteRoot": "./modules"
+              },
+              {
+                "localRoot": "${workspaceFolder}/services/tasks/app",
+                "remoteRoot": "./app"
+              },
+              {
+                "localRoot": "${workspaceFolder}/services/tasks/tests",
+                "remoteRoot": "./tests"
+              },
               ]
         },
     ]

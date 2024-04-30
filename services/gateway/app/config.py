@@ -9,6 +9,8 @@ class Config(BaseSettings):
     PROJECT_NAME = "auth service"
     POSTGRES_URL: str = os.environ.get("PG_URL")
     RABBITMQ_URL: str = os.environ.get("RMQ_URL")
+    CLIENT_PUBLISH_RETRIES: int = 5
+    SERVER_PUBLISH_RETRIES: int = 5
 
 
 class JWTConfig(BaseSettings):
