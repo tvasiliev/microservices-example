@@ -1,5 +1,6 @@
 # microservices-example
-Example of application with microservices async architecture.
+Example of application with microservices async architecture. RPCClient supports both request/response and simple publish.
+WIP
 
 ![Services schema](./documentation/app-schema.png)
 
