@@ -13,9 +13,10 @@ from .db import User, GatewayDBManager
 from .models import UserJSON, UserSignUpJSON
 from .utils import hash_password, verify_password
 from .rpc.server import GatewayRPCServer
+from .rpc.client import GatewayRPCClient
 
 
-app = create_app(rpc_server=GatewayRPCServer, config=config, database_manager=GatewayDBManager)
+app = create_app(rpc_server=GatewayRPCServer, rpc_client=GatewayRPCClient, config=config, database_manager=GatewayDBManager)
 
 
 denied_tokens = set()
@@ -172,9 +173,8 @@ async def sign_up_page(request: Request, Authorize: AuthJWT = Depends()) -> Resp
 async def ping_task_service() -> Response:
     """Checks availability of tasks microservice"""
     response = await app.rabbitmq_client.request(
-        'tasks.ping',
-        'gateway.tasks-request-callback', 
-        {'text': 'ping from gateway'}
+        routing_key='tasks.request',
+        message_body={'text': 'ping from gateway'}
     )
 
     return JSONResponse(json.loads(response.decode()))
@@ -184,9 +184,8 @@ async def ping_task_service() -> Response:
 async def ping_billing_service() -> Response:
     """Checks availability of billing microservice"""
     response = await app.rabbitmq_client.request(
-        'billing.ping', 
-        'gateway.billing-request-callback',
-        {'text': 'ping from gateway'}
+        routing_key='billing.request',
+        message_body={'text': 'ping from gateway'}
     )
 
     return JSONResponse(json.loads(response.decode()))

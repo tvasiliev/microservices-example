@@ -3,14 +3,18 @@ Example of application with microservices async architecture.
 
 ![Services schema](./documentation/app-schema.png)
 
+![RabbitMQ topology](./documentation/rabbitmq_topology.png)
+
 ## How to run
 Docker is required in order to run this project.
 
-When in directory root folder, execute the following command:
+When in directory root folder, execute the following commands:
+
+`source .env`
 
 `docker-compose up --build`
 
-This will cause all services to build and run. If you want to run certain service, just execute this:
+Last one will cause all services to build and run. If you want to run certain service, just execute this:
 
 `docker-compose up SERVICE_NAME --build`
 

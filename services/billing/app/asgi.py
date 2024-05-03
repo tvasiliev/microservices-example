@@ -7,19 +7,19 @@ from starlette.responses import JSONResponse
 
 from .config import config
 from .rpc.server import BillingRPCServer
+from .rpc.client import BillingRPCClient
 from .db import BillingDBManager
 
 
-app = create_app(rpc_server=BillingRPCServer, config=config, database_manager=BillingDBManager)
+app = create_app(rpc_server=BillingRPCServer, rpc_client=BillingRPCClient, config=config, database_manager=BillingDBManager)
 
 
 @app.get("/ping-gateway")
 async def ping_gateway_service() -> Response:
     """Checks availability of gateway microservice"""
     response = await app.rabbitmq_client.request(
-        'gateway.ping', 
-        'billing.gateway-request-callback',
-        {'text': 'ping from billing'}
+        routing_key='gateway.request',
+        message_body={'text': 'ping from billing'}
     )
 
     return JSONResponse(json.loads(response.decode()))
@@ -29,9 +29,8 @@ async def ping_gateway_service() -> Response:
 async def ping_tasks_service() -> Response:
     """Checks availability of tasks microservice"""
     response = await app.rabbitmq_client.request(
-        'tasks.ping',
-        'billing.tasks-request-callback',
-        {'text': 'ping from billing'}
+        routing_key='tasks.request',
+        message_body={'text': 'ping from billing'}
     )
 
     return JSONResponse(json.loads(response.decode()))

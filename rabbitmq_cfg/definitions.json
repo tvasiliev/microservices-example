@@ -1,0 +1,202 @@
+{
+    "queues": [
+        {
+            "name": "gateway_request_queue",
+            "vhost": "/",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {
+                "x-queue-type": "classic",
+                "x-dead-letter-exchange": "dlx",
+                "x-message-ttl": 100000
+            }
+        },
+        {
+            "name": "gateway_callback_queue",
+            "vhost": "/",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {
+                "x-queue-type": "classic",
+                "x-dead-letter-exchange": "dlx",
+                "x-message-ttl": 100000
+            }
+        },
+        {
+            "name": "tasks_request_queue",
+            "vhost": "/",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {
+                "x-queue-type": "classic",
+                "x-dead-letter-exchange": "dlx",
+                "x-message-ttl": 100000
+            }
+        },
+        {
+            "name": "tasks_callback_queue",
+            "vhost": "/",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {
+                "x-queue-type": "classic",
+                "x-dead-letter-exchange": "dlx",
+                "x-message-ttl": 100000
+            }
+        },
+        {
+            "name": "billing_request_queue",
+            "vhost": "/",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {
+                "x-queue-type": "classic",
+                "x-dead-letter-exchange": "dlx",
+                "x-message-ttl": 100000
+            }
+        },
+        {
+            "name": "billing_callback_queue",
+            "vhost": "/",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {
+                "x-queue-type": "classic",
+                "x-dead-letter-exchange": "dlx",
+                "x-message-ttl": 100000
+            }
+        }
+    ],
+    "exchanges": [
+        {
+            "name": "dlx",
+            "vhost": "/",
+            "type": "fanout",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {}
+        },
+        {
+            "name": "tasks_exchange",
+            "vhost": "/",
+            "type": "topic",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {}
+        },
+        {
+            "name": "gateway_exchange",
+            "vhost": "/",
+            "type": "topic",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {}
+        },
+        {
+            "name": "billing_exchange",
+            "vhost": "/",
+            "type": "topic",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {}
+        }
+    ],
+    "bindings": [
+        {
+            "source": "billing_exchange",
+            "vhost": "/",
+            "destination": "tasks_exchange",
+            "destination_type": "exchange",
+            "routing_key": "tasks.*",
+            "arguments": {}
+        },
+        {
+            "source": "gateway_exchange",
+            "vhost": "/",
+            "destination": "tasks_exchange",
+            "destination_type": "exchange",
+            "routing_key": "tasks.*",
+            "arguments": {}
+        },
+        {
+            "source": "billing_exchange",
+            "vhost": "/",
+            "destination": "gateway_exchange",
+            "destination_type": "exchange",
+            "routing_key": "gateway.*",
+            "arguments": {}
+        },
+        {
+            "source": "tasks_exchange",
+            "vhost": "/",
+            "destination": "gateway_exchange",
+            "destination_type": "exchange",
+            "routing_key": "gateway.*",
+            "arguments": {}
+        },
+        {
+            "source": "tasks_exchange",
+            "vhost": "/",
+            "destination": "billing_exchange",
+            "destination_type": "exchange",
+            "routing_key": "billing.*",
+            "arguments": {}
+        },
+        {
+            "source": "gateway_exchange",
+            "vhost": "/",
+            "destination": "billing_exchange",
+            "destination_type": "exchange",
+            "routing_key": "billing.*",
+            "arguments": {}
+        },
+        {
+            "source": "tasks_exchange",
+            "vhost": "/",
+            "destination": "tasks_request_queue",
+            "destination_type": "queue",
+            "routing_key": "tasks.request",
+            "arguments": {}
+        },
+        {
+            "source": "tasks_exchange",
+            "vhost": "/",
+            "destination": "tasks_callback_queue",
+            "destination_type": "queue",
+            "routing_key": "tasks.callback",
+            "arguments": {}
+        },
+        {
+            "source": "gateway_exchange",
+            "vhost": "/",
+            "destination": "gateway_request_queue",
+            "destination_type": "queue",
+            "routing_key": "gateway.request",
+            "arguments": {}
+        },
+        {
+            "source": "gateway_exchange",
+            "vhost": "/",
+            "destination": "gateway_callback_queue",
+            "destination_type": "queue",
+            "routing_key": "gateway.callback",
+            "arguments": {}
+        },
+        {
+            "source": "billing_exchange",
+            "vhost": "/",
+            "destination": "billing_request_queue",
+            "destination_type": "queue",
+            "routing_key": "billing.request",
+            "arguments": {}
+        },
+        {
+            "source": "billing_exchange",
+            "vhost": "/",
+            "destination": "billing_callback_queue",
+            "destination_type": "queue",
+            "routing_key": "billing.callback",
+            "arguments": {}
+        }
+    ]
+}

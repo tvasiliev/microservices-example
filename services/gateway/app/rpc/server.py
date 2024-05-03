@@ -4,9 +4,12 @@ from modules.rabbitmq.rpc.server import RPCServer
 class GatewayRPCServer(RPCServer):
     """RabbitMQ RPC server"""
 
+    _PUBLISH_EXCHANGE_NAME: str = 'gateway_exchange'
+
     QUEUE_NAME_TO_HANDLER: dict = {
-        'gateway.ping': 'ping',
+        'gateway_request_queue': 'handle_request',
     }
 
-    async def ping(self, message_body: dict):
-        return {"text": "pong from gateway"}
+    async def handle_request(self, message_body: dict):
+        """Request handling"""
+        return {"text": f"pong from gateway, recieved: '{message_body}'"}

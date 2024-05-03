@@ -7,7 +7,8 @@ services:
       - "5672:5672"
       - "15672:15672"
     volumes:
-      - './rabbitmq-data:/data'
+      - ./rabbitmq_cfg/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq_cfg/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:15672"]
       interval: 30s

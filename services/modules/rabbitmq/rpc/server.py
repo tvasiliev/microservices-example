@@ -27,31 +27,29 @@ class RPCServer(RabbitMQClient):
             message: AbstractIncomingMessage
             async for message in qiterator:
                 async with message.process(ignore_processed=True):
-                    if message.reply_to is None:
-                        await message.reject()
-
                     message_body = json.loads(message.body.decode())
                     await message.ack()
-                    self._logger.info(
-                        "Recieved request (%s): %s [correlation_id: %s]",
-                        message.message_id, message_body, message.correlation_id
-                    )
-                    response = await getattr(self, self.QUEUE_NAME_TO_HANDLER[queue_name])(message_body)
 
-                    await self.publish(
-                        message=Message(
-                            body=json.dumps(response).encode("utf-8"),
-                            correlation_id=message.correlation_id,
-                            delivery_mode=DeliveryMode.PERSISTENT
-                        ),
-                        routing_key=message.reply_to,
-                        timeout=5,
-                        mandatory=True
-                    )
+                    handler_result = await getattr(self, self.QUEUE_NAME_TO_HANDLER[queue_name])(message_body)
+
+                    if message.reply_to is not None:
+                        # recieved request, sending response
+                        self._logger.info(
+                            "Recieved request (%s): %s [correlation_id: %s]",
+                            message.message_id, message_body, message.correlation_id
+                        )
+
+                        await self.publish(
+                            message=Message(
+                                body=json.dumps(handler_result).encode("utf-8"),
+                                correlation_id=message.correlation_id,
+                                delivery_mode=DeliveryMode.PERSISTENT
+                            ),
+                            routing_key=message.reply_to,
+                            timeout=5,
+                            mandatory=True
+                        )
 
     async def listen(self) -> Awaitable[None]:
-        """ on all defined queues infinitely"""
-        for queue_name in self.QUEUE_NAME_TO_HANDLER:
-            await self._input_channel.declare_queue(queue_name, durable=True)
-
+        """Listens on all defined queues infinitely"""
         await asyncio.gather(*(self._listen(queue_name) for queue_name in self.QUEUE_NAME_TO_HANDLER))

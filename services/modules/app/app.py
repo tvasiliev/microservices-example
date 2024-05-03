@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from modules.rabbitmq.rpc.client import RPCClient
 from modules.rabbitmq.client import create_connection
 
 from .utils import add_task_to_loop
@@ -14,10 +13,11 @@ from .utils import add_task_to_loop
 if TYPE_CHECKING:
     from modules.db import DBManager
     from modules.rabbitmq.rpc.server import RPCServer
+    from modules.rabbitmq.rpc.client import RPCClient
     from pydantic import BaseModel
 
 
-def create_app(rpc_server: 'RPCServer', config: 'BaseModel', database_manager: 'DBManager') -> FastAPI:
+def create_app(rpc_server: 'RPCServer', rpc_client: 'RPCClient', config: 'BaseModel', database_manager: 'DBManager') -> FastAPI:
     """Application instance creation"""
 
     @asynccontextmanager
@@ -30,7 +30,7 @@ def create_app(rpc_server: 'RPCServer', config: 'BaseModel', database_manager: '
         rmq_output_connection = await create_connection(broker_url=config.RABBITMQ_URL)
         # separate connections help to read messages when flow control regulates connetion with high amount of sendings
 
-        app.rabbitmq_client = RPCClient(
+        app.rabbitmq_client = rpc_client(
             rmq_input_connection,
             rmq_output_connection,
             config.CLIENT_PUBLISH_RETRIES

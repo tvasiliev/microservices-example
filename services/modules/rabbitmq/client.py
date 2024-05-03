@@ -2,7 +2,7 @@ import asyncio
 from typing import Awaitable
 
 from aio_pika import connect
-from aio_pika.abc import AbstractConnection, AbstractChannel
+from aio_pika.abc import AbstractConnection, AbstractChannel, AbstractExchange
 from aio_pika.exceptions import DeliveryError
 from modules.log import get_logger
 
@@ -20,6 +20,8 @@ class RabbitMQClient:
 
     _input_channel: AbstractChannel
     _output_channel: AbstractChannel
+    _exchange: AbstractExchange
+    _PUBLISH_EXCHANGE_NAME: str = NotImplemented
 
     def __init__(
         self, input_connection: AbstractConnection,
@@ -33,7 +35,10 @@ class RabbitMQClient:
     async def open_channels(self) -> Awaitable[None]:
         """Opens channels from RabbitMQ connections"""
         self._input_channel = await self._input_connection.channel()
+        await self._input_channel.set_qos(prefetch_count=500)
+
         self._output_channel = await self._output_connection.channel(publisher_confirms=True, on_return_raises=True)
+        self._exchange = await self._output_channel.get_exchange(self._PUBLISH_EXCHANGE_NAME)
 
     async def close_channels(self) -> Awaitable[None]:
         """Closes channels from RabbitMQ connections"""
@@ -45,7 +50,7 @@ class RabbitMQClient:
         retries = self._publish_retries
         while True:
             try:
-                await self._output_channel.default_exchange.publish(**kwargs)
+                await self._exchange.publish(**kwargs)
                 return
             except DeliveryError as exc:
                 retries -= 1
